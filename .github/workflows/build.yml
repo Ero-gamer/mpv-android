@@ -36,12 +36,10 @@ jobs:
         env:
           ABI: armeabi-v7a
         run: |
-          ./gradlew assembleDebug -Pabi=$ABI
+          ./gradlew assembleRelease -Pabi=$ABI
 
-      - name: Upload apk artifact
+      - name: Upload release apk artifact
         uses: actions/upload-artifact@v4
         with:
-          name: mpv-android-armv7a
-          path: |
-            app/build/outputs/apk/armeabi-v7a/debug/*.apk
-            app/build/outputs/apk/armeabi-v7a/release/*.apk
+          name: mpv-android-armv7a-release
+          path: app/build/outputs/apk/armeabi-v7a/release/*.apk
