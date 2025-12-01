@@ -32,24 +32,14 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x ./gradlew
 
-      - name: Build (release, all ABIs)
+      - name: Build release APK
         run: ./gradlew assembleRelease
 
-      - name: Find built APKs
-        id: apk_paths
-        run: |
-          APK_DIR=$(find app/build/outputs/apk -type d -name '*release*' | head -n 1)
-          echo "apk_dir=${APK_DIR}" >> $GITHUB_OUTPUT
-
       - name: List APKs (debug step)
-        run: |
-          ls -lhR app/build/outputs/apk
+        run: ls -lhR app/build/outputs/apk
 
-      - name: Upload release APK artifact (armeabi-v7a only)
+      - name: Upload all release APKs
         uses: actions/upload-artifact@v4
         with:
-          name: mpv-android-armv7a-release
-          path: |
-            app/build/outputs/apk/release/*armeabi-v7a*.apk
-            app/build/outputs/apk/*/release/*armeabi-v7a*.apk
-            app/build/outputs/apk/*armeabi-v7a*/*.apk
+          name: mpv-android-release-apks
+          path: app/build/outputs/apk/**/release/*.apk
