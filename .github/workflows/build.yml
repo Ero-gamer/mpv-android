@@ -1,26 +1,70 @@
-name: Build MPV Android
-on: [push, workflow_dispatch]
+name: Build mpv-android (armv7a with native libs)
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
 
 jobs:
-  build:
+  build-armv7a:
     runs-on: ubuntu-latest
+    name: Build for armv7a (with native libs)
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout source
+        uses: actions/checkout@v4
 
-      - name: Install build dependencies
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: 17
+
+      - name: Download Android NDK
+        uses: nttld/setup-ndk@v1
+        with:
+          ndk-version: r26b
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Grant execute permission for scripts
         run: |
-          sudo apt update
-          sudo apt install -y ninja-build meson python3-pip wget unzip openjdk-17-jdk
-          pip3 install requests
+          chmod +x ./gradlew
+          if [ -f ./scripts/buildall.sh ]; then chmod +x ./scripts/buildall.sh; fi
+          if [ -f ./scripts/gen-libs.sh ]; then chmod +x ./scripts/gen-libs.sh; fi
 
-      - name: Build everything
+      - name: Build native libraries (armeabi-v7a)
         run: |
-          ./buildscripts/download.sh
-          ./buildscripts/buildall.sh --clean --release -n ffmpeg
+          # You may need to adjust the script name/path depending on your repo.
+          if [ -f ./scripts/buildall.sh ]; then
+            ./scripts/buildall.sh armeabi-v7a
+          elif [ -f ./scripts/gen-libs.sh ]; then
+            ./scripts/gen-libs.sh armeabi-v7a
+          else
+            echo "No native build script found. Please set up native library build step."
+            exit 1
+          fi
 
-      - name: Upload APKs
+      - name: Ensure jniLibs for armeabi-v7a exists
+        run: |
+          mkdir -p app/src/main/jniLibs/armeabi-v7a
+          # Copy generated .so files if not automatically copied
+          find . -name "*.so" -path "*armeabi-v7a*" -exec cp {} app/src/main/jniLibs/armeabi-v7a/ \; || true
+
+      - name: Build (release, all ABIs)
+        run: ./gradlew assembleRelease
+
+      - name: List APKs (debug step)
+        run: |
+          ls -lhR app/build/outputs/apk
+
+      - name: Upload release APK artifact (armeabi-v7a only)
         uses: actions/upload-artifact@v4
         with:
-          name: mpv-android-apks
-          path: app/build/outputs/apk/release/*.apk
-          retention-days: 30
+          name: mpv-android-armv7a-release
+          path: |
+            app/build/outputs/apk/release/*armeabi-v7a*.apk
+            app/build/outputs/apk/*/release/*armeabi-v7a*.apk
+            app/build/outputs/apk/*armeabi-v7a*/*.apk
