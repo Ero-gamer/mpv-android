@@ -68,3 +68,16 @@ jobs:
             app/build/outputs/apk/release/*armeabi-v7a*.apk
             app/build/outputs/apk/*/release/*armeabi-v7a*.apk
             app/build/outputs/apk/*armeabi-v7a*/*.apk
+
+            
+      - name: Build native libraries (armeabi-v7a)
+        run: |
+          set -eux  # Exit on error, print commands
+          if [ -f ./scripts/buildall.sh ]; then
+            ./scripts/buildall.sh armeabi-v7a
+          elif [ -f ./scripts/gen-libs.sh ]; then
+            ./scripts/gen-libs.sh armeabi-v7a
+          else
+            echo "No native build script found. Please see your mpv-android repo docs for native build setup."
+            exit 1
+          fi
